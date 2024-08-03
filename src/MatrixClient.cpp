@@ -13,7 +13,6 @@ MatrixClient::MatrixClient(std::string host_name, std::string port, boost::asio:
  * @return
  */
 boost::asio::awaitable<void> MatrixClient::connect() {
-
     try {
         auto const results = co_await resolver.async_resolve(host, port_, boost::asio::use_awaitable);
 
