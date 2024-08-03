@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(OpenSSL REQUIRED)
 
-find_package(Boost 1.83.0 REQUIRED COMPONENTS system thread regex json)
+find_package(Boost 1.83.0 REQUIRED COMPONENTS system thread json)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     link_directories(${Boost_LIBRARY_DIRS})
