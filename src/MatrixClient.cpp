@@ -169,6 +169,7 @@ std::string MatrixClient::parse_login_response(const std::string& response) {
     if (!json_obj.contains("access_token")) {
         throw std::runtime_error("Error: No access token in response");
     }
+
     return json_obj["access_token"].as_string().c_str();
 }
 
@@ -178,17 +179,19 @@ std::string MatrixClient::parse_login_response(const std::string& response) {
  * we start the writer method and the reader method
  * @return
  */
-boost::asio::awaitable<void> MatrixClient::start_sync() {
+void MatrixClient::start_sync() {
     try {
         // TODO finish are long polling start sync method
+        // start are infinite write operation
         boost::asio::co_spawn(stream_.get_executor(),
             [self = shared_from_this()] {return self->writer(); }, boost::asio::detached);
 
+        // start our read operation
+        boost::asio::co_spawn(stream_.get_executor(),
+            [self = shared_from_this()] { return self->reader(); }, boost::asio::detached);
 
-
-    } catch (const std::exception& ec) {
+    } catch (std::exception&) {
         stop();
-        throw ec;
     }
 }
 
@@ -219,6 +222,27 @@ boost::asio::awaitable<void> MatrixClient::writer() {
             } else {
                 co_await boost::beast::http::async_write(stream_, write_msgs_.front(), boost::asio::use_awaitable);
             }
+        }
+    } catch (std::exception&) {
+        stop();
+    }
+}
+
+/**
+ * reader method is going
+ * to read need to setup a
+ * a callback structure
+ * so we can get our info
+ * back to user
+ * @return
+ */
+boost::asio::awaitable<void> MatrixClient::reader() {
+    namespace http = boost::beast::http;
+    try {
+        while (boost::beast::get_lowest_layer(stream_).socket().is_open()) {
+            boost::beast::flat_buffer buffer;
+            http::response<http::dynamic_body> res;
+            co_await http::async_read(stream_, buffer, res, boost::asio::use_awaitable);
         }
     } catch (std::exception&) {
         stop();

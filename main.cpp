@@ -13,13 +13,11 @@ auto run(std::shared_ptr<MatrixClient> client) -> boost::asio::awaitable<void> {
         co_await client->connect();
 
         // Uncomment the desired login method
-
         // Login with username and password
         co_await client->password_login("your_username", "your_password");
 
         // Login with token
         //co_await client->token_login("your_login_token");
-
         //std::cout << "Logged in successfully" << std::endl;
 
         // Continue with other operations...

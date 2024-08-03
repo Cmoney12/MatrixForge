@@ -41,11 +41,13 @@ public:
 
     static std::string parse_login_response(const std::string& response);
 
-    boost::asio::awaitable<void> start_sync();
+    void start_sync();
 
     void deliver(boost::beast::http::request<boost::beast::http::string_body>&& request);
 
     boost::asio::awaitable<void> writer();
+
+    boost::asio::awaitable<void> reader();
 
 private:
     std::string host;
