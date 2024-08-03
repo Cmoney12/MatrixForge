@@ -3,11 +3,12 @@
 
 /**
  * just an example and for testing
- * purposes
+ * purposes need a test account to test this
+ * with
  * @param client
  * @return
  */
-boost::asio::awaitable<void> run(std::shared_ptr<MatrixClient> client) {
+auto run(std::shared_ptr<MatrixClient> client) -> boost::asio::awaitable<void> {
     try {
         co_await client->connect();
 

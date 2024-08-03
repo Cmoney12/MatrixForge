@@ -9,23 +9,31 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/asio/connect.hpp>
+#include <boost/asio/redirect_error.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/json.hpp>
-#include <iostream>
-#include <utility>
+#include <mutex>
+#include <deque>
 #include <string>
+#include <memory>
+#include <utility>
+#include <iostream>
 
-class MatrixClient {
+class MatrixClient : public std::enable_shared_from_this<MatrixClient> {
 public:
     MatrixClient(std::string host_name, std::string port, boost::asio::io_context& io_context);
 
     boost::asio::awaitable<void> connect();
 
+    void stop();
+
     boost::asio::awaitable<void> password_login(const std::string& username, const std::string& password);
 
     boost::asio::awaitable<void> token_login(const std::string& login_token);
+
+    boost::asio::awaitable<void> token_login();
 
     static std::string generate_password_login_string(const std::string& username, const std::string& password);
 
@@ -33,13 +41,22 @@ public:
 
     static std::string parse_login_response(const std::string& response);
 
+    boost::asio::awaitable<void> start_sync();
+
+    void deliver(boost::beast::http::request<boost::beast::http::string_body>&& request);
+
+    boost::asio::awaitable<void> writer();
+
 private:
     std::string host;
     std::string port_;
     boost::asio::ssl::context ctx_;
     boost::beast::ssl_stream<boost::beast::tcp_stream> stream_;
     boost::asio::ip::tcp::resolver resolver;
+    std::deque<boost::beast::http::request<boost::beast::http::string_body>> write_msgs_;
+    boost::asio::steady_timer write_timer_;
     std::string token;
+    std::mutex write_mtx;
 };
 
 #endif //MATRIXCLIENT_H
