@@ -43,11 +43,13 @@ public:
 
     void start_sync();
 
-    void deliver(boost::beast::http::request<boost::beast::http::string_body>&& request);
+    boost::asio::awaitable<void> long_polling();
 
-    boost::asio::awaitable<void> writer();
+    //void deliver(boost::beast::http::request<boost::beast::http::string_body>&& request);
 
-    boost::asio::awaitable<void> reader();
+    //boost::asio::awaitable<void> writer();
+
+    //boost::asio::awaitable<void> reader();
 
 private:
     std::string host;

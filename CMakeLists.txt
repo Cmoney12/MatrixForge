@@ -14,10 +14,12 @@ endif(Boost_FOUND)
 include_directories(include)
 include_directories(src)
 
-add_executable(MatrixForge main.cpp
+add_executable(${PROJECT_NAME} main.cpp
         include/MatrixClient.h
         src/MatrixClient.cpp)
 
 SET(USED_LIBS ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_JSON_LIBRARY})
 
 target_link_libraries(${PROJECT_NAME} ${USED_LIBS} OpenSSL::Crypto OpenSSL::SSL)
+
+add_subdirectory(tests)

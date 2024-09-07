@@ -14,7 +14,7 @@ auto run(std::shared_ptr<MatrixClient> client) -> boost::asio::awaitable<void> {
 
         // Uncomment the desired login method
         // Login with username and password
-        co_await client->password_login("your_username", "your_password");
+        co_await client->password_login("username", "password");
 
         // Login with token
         //co_await client->token_login("your_login_token");
@@ -37,13 +37,6 @@ int main() {
     boost::asio::co_spawn(io_context, run(client), boost::asio::detached);
 
     io_context.run();
-
-    /**auto client = std::make_shared<MatrixClient>(host, port, io_context);
-    boost::asio::co_spawn(io_context, [&] -> boost::asio::awaitable<void> {
-        co_await client->connect();
-    }, boost::asio::detached);
-
-    io_context.run();**/
 
     return 0;
 

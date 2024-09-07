@@ -172,13 +172,57 @@ std::string MatrixClient::parse_login_response(const std::string& response) {
     return json_obj["access_token"].as_string().c_str();
 }
 
+void MatrixClient::start_sync() {
+    try {
+        // Start long polling coroutine
+        boost::asio::co_spawn(stream_.get_executor(),
+            [self = shared_from_this()] { return self->long_polling(); }, boost::asio::detached);
+    } catch (std::exception&) {
+        stop();
+    }
+}
+
+boost::asio::awaitable<void> MatrixClient::long_polling() {
+    namespace http = boost::beast::http;
+
+    try {
+        while (boost::beast::get_lowest_layer(stream_).socket().is_open()) {
+            http::request<http::string_body> req {http::verb::get, "/_matrix/client/r0/sync", 11};
+            req.set(http::field::host, host);
+            req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+            req.set(http::field::authorization, "Bearer " + token);
+
+            // Send long polling request
+            co_await http::async_write(stream_, req, boost::asio::use_awaitable);
+
+            boost::beast::flat_buffer buffer;
+            http::response<http::dynamic_body> res;
+
+            // Read response from the server
+            co_await http::async_read(stream_, buffer, res, boost::asio::use_awaitable);
+
+            // Process the response
+            if (res.result() == http::status::ok) {
+                const std::string response_body = boost::beast::buffers_to_string(res.body().data());
+                std::cout << "Received: " << response_body << std::endl;
+            } else {
+                std::cerr << "HTTP request failed: " << res.result_int() << " " << res.reason() << std::endl;
+                // Handle errors or retry logic here
+            }
+        }
+    } catch (std::exception&) {
+        stop();
+    }
+}
+
+
 /**
  * starts long polling sets up reading and writing
  * this method assumes you are already connected
  * we start the writer method and the reader method
  * @return
  */
-void MatrixClient::start_sync() {
+/**void MatrixClient::start_sync() {
     try {
         // TODO finish are long polling start sync method
         // start are infinite write operation
@@ -189,22 +233,26 @@ void MatrixClient::start_sync() {
         boost::asio::co_spawn(stream_.get_executor(),
             [self = shared_from_this()] { return self->reader(); }, boost::asio::detached);
 
+        // co_spawn loop that will push requests into the vectory which will then be
+        // sent and read
+
     } catch (std::exception&) {
         stop();
     }
-}
+}**/
 
+// saving these for when I implement SSE
 /**
  * Sends a message to the server
  * @param request
  * @return
  **/
-void MatrixClient::deliver(boost::beast::http::request<boost::beast::http::string_body>&& request) {
+/**void MatrixClient::deliver(boost::beast::http::request<boost::beast::http::string_body>&& request) {
     // we'll be calling this most likely from multiple threads
     std::unique_lock<std::mutex> lock(write_mtx);
     write_msgs_.push_back(std::move(request));
     write_timer_.cancel_one();
-}
+}**/
 
 /**
  * basically polls are
@@ -212,7 +260,7 @@ void MatrixClient::deliver(boost::beast::http::request<boost::beast::http::strin
  * that are posted
  * @return
  **/
-boost::asio::awaitable<void> MatrixClient::writer() {
+/**boost::asio::awaitable<void> MatrixClient::writer() {
     try {
         while (boost::beast::get_lowest_layer(stream_).socket().is_open()) {
             if (write_msgs_.empty()) {
@@ -225,7 +273,7 @@ boost::asio::awaitable<void> MatrixClient::writer() {
     } catch (std::exception&) {
         stop();
     }
-}
+}**/
 
 /**
  * reader method is going
@@ -235,7 +283,7 @@ boost::asio::awaitable<void> MatrixClient::writer() {
  * back to user
  * @return
  */
-boost::asio::awaitable<void> MatrixClient::reader() {
+/**boost::asio::awaitable<void> MatrixClient::reader() {
     namespace http = boost::beast::http;
     try {
         while (boost::beast::get_lowest_layer(stream_).socket().is_open()) {
@@ -246,7 +294,7 @@ boost::asio::awaitable<void> MatrixClient::reader() {
     } catch (std::exception&) {
         stop();
     }
-}
+}**/
 
 std::string MatrixClient::generate_password_login_string(const std::string& username, const std::string& password) {
     boost::json::object payload;
