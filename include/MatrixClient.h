@@ -35,6 +35,8 @@ public:
 
     boost::asio::awaitable<void> token_login();
 
+    void parse_sync_respone(const std::string& json_response);
+
     static std::string generate_password_login_string(const std::string& username, const std::string& password);
 
     static std::string generate_username_login_string(const std::string& token);
@@ -60,6 +62,7 @@ private:
     std::deque<boost::beast::http::request<boost::beast::http::string_body>> write_msgs_;
     boost::asio::steady_timer write_timer_;
     std::string token;
+    std::string next_sync_token;
     std::mutex write_mtx;
 };
 

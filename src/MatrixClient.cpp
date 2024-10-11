@@ -152,6 +152,32 @@ boost::asio::awaitable<void> MatrixClient::token_login() {
     }
 }
 
+void MatrixClient::parse_sync_respone(const std::string &json_response) {
+    boost::json::value sync_data = boost::json::parse(json_response);
+    boost::json::object& sync_obj = sync_data.as_object();
+
+    if (sync_obj.contains("rooms")) {
+        auto& rooms = sync_obj["rooms"].as_object();
+        auto& join_rooms = rooms["join"].as_object();
+
+        for (auto& room : join_rooms) {
+            auto& room_events = room.value().as_object()["timeline"].as_object()["events"].as_array();
+            for (auto& event : room_events) {
+                std::string event_type = event.as_object()["type"].as_string().c_str();
+                if (event_type == "m.room.message") {
+                    std::string sender = event.as_object()["sender"].as_string().c_str();
+                    std::string message = event.as_object()["content"].as_object()["body"].as_string().c_str();
+                    std::cout << "Message from " << sender << ": " << message << std::endl;
+                }
+                // Handle other event types...
+            }
+        }
+    }
+
+    next_sync_token = sync_obj["next_batch"].as_string().c_str();
+    std::cout << "Next sync token: " << next_sync_token << std::endl;
+}
+
 /**
  * parses the login response
  * @param response
@@ -184,15 +210,17 @@ void MatrixClient::start_sync() {
 
 boost::asio::awaitable<void> MatrixClient::long_polling() {
     namespace http = boost::beast::http;
+    std::string sync_url = "/_matrix/client/r0/sync";
+
 
     try {
         while (boost::beast::get_lowest_layer(stream_).socket().is_open()) {
-            http::request<http::string_body> req {http::verb::get, "/_matrix/client/r0/sync", 11};
+            http::request<http::string_body> req {http::verb::get, sync_url, 11};
             req.set(http::field::host, host);
             req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
             req.set(http::field::authorization, "Bearer " + token);
 
-            // Send long polling request
+            // Send the sync request
             co_await http::async_write(stream_, req, boost::asio::use_awaitable);
 
             boost::beast::flat_buffer buffer;
@@ -204,7 +232,12 @@ boost::asio::awaitable<void> MatrixClient::long_polling() {
             // Process the response
             if (res.result() == http::status::ok) {
                 const std::string response_body = boost::beast::buffers_to_string(res.body().data());
-                std::cout << "Received: " << response_body << std::endl;
+                parse_sync_respone(response_body);
+
+                if (!next_sync_token.empty()) {
+                    sync_url = std::format("/_matrix/client/r0/sync?since={}", next_sync_token);
+                }
+
             } else {
                 std::cerr << "HTTP request failed: " << res.result_int() << " " << res.reason() << std::endl;
                 // Handle errors or retry logic here
