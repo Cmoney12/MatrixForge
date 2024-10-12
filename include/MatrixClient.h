@@ -20,6 +20,12 @@
 #include <memory>
 #include <utility>
 #include <iostream>
+#include <unordered_map>
+#include <format>
+
+#include "Room.h"
+#include "User.h"
+
 
 class MatrixClient : public std::enable_shared_from_this<MatrixClient> {
 public:
@@ -35,7 +41,7 @@ public:
 
     boost::asio::awaitable<void> token_login();
 
-    void parse_sync_respone(const std::string& json_response);
+    void parse_sync_response(const std::string& json_response);
 
     static std::string generate_password_login_string(const std::string& username, const std::string& password);
 
@@ -64,6 +70,8 @@ private:
     std::string token;
     std::string next_sync_token;
     std::mutex write_mtx;
+    std::unordered_map<std::string, Room> rooms;  // Key: room_id
+    std::unordered_map<std::string, User> users;  // Key: user_id
 };
 
 #endif //MATRIXCLIENT_H

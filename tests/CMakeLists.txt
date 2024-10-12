@@ -13,7 +13,8 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # Add test executable
-add_executable(MatrixClientTests MatrixClientTest.cpp ../src/MatrixClient.cpp)
+add_executable(MatrixClientTests MatrixClientTest.cpp ../src/MatrixClient.cpp
+)
 
 # Link the test executable with Google Test, Boost, and OpenSSL
 target_link_libraries(MatrixClientTests

@@ -152,7 +152,7 @@ boost::asio::awaitable<void> MatrixClient::token_login() {
     }
 }
 
-void MatrixClient::parse_sync_respone(const std::string &json_response) {
+void MatrixClient::parse_sync_response(const std::string &json_response) {
     boost::json::value sync_data = boost::json::parse(json_response);
     boost::json::object& sync_obj = sync_data.as_object();
 
@@ -232,7 +232,7 @@ boost::asio::awaitable<void> MatrixClient::long_polling() {
             // Process the response
             if (res.result() == http::status::ok) {
                 const std::string response_body = boost::beast::buffers_to_string(res.body().data());
-                parse_sync_respone(response_body);
+                parse_sync_response(response_body);
 
                 if (!next_sync_token.empty()) {
                     sync_url = std::format("/_matrix/client/r0/sync?since={}", next_sync_token);
